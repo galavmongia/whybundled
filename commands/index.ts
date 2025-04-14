@@ -52,7 +52,17 @@ export default async function defaultCommand(
   const format = (str: string) =>
     str.replace(/^\.\//, "").replace(/ \+ \d+ modules$/, "");
 
-  const modules = report.modules.filter((module) => {
+  const chunkIds = new Set();
+
+  Object.keys(stats.chunks).forEach((id) => {
+    const chunk = stats.chunks[id];
+
+    if (["main_app"].includes(chunk.id)) {
+      chunkIds.add(chunk.id);
+    }
+  });
+
+  let modules = report.modules.filter((module) => {
     if (pattern && mm.isMatch(module.name, pattern, { format })) {
       return true;
     } else if (pattern) {
@@ -67,6 +77,20 @@ export default async function defaultCommand(
     if (duplicatesOnly && (module.locations || []).length < 2) return false;
 
     return true;
+  });
+
+  modules = modules.map((module) => {
+    if (module.reasons && module.reasons.length > 0) {
+      module.reasons = module.reasons.filter((reason) => {
+        return report.modules.find((m) => {
+          if (m.name === reason.moduleName) {
+            return m.chunks.some((chunk) => chunkIds.has(chunk));
+          }
+          return false;
+        });
+      });
+    }
+    return module;
   });
 
   const updatedLimit = pattern ? 0 : limit >= 0 ? limit : 20;
