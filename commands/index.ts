@@ -55,6 +55,7 @@ export default async function defaultCommand(
   const chunkIds = new Set();
 
   Object.keys(stats.chunks).forEach((id) => {
+    // @ts-expect-error
     const chunk = stats.chunks[id];
 
     if (["main_app"].includes(chunk.id)) {
